@@ -31,3 +31,10 @@ KWORK SELENIUM PARSER
 ✅ Поменять оформление в Google Sheets таблицах...
 ✅ Логотип для ТГ-бота...
 📁 Сохранено 4 заказов в kwork_orders.json
+
+Запуск на Windows
+
+1. Установите Python с [python.org](https://python.org) (отметьте "Add Python to PATH")
+2. Установите Selenium:
+   ```cmd
+   pip install selenium
