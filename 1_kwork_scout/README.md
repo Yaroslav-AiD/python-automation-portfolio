@@ -38,3 +38,7 @@ KWORK SELENIUM PARSER
 2. Установите Selenium:
    ```cmd
    pip install selenium
+
+Запуск
+cmd
+python kwork_scout.py
