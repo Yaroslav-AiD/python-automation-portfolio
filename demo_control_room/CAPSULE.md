@@ -1,4 +1,4 @@
-# DEVA CONTROL ROOM
+# DEMO CONTROL ROOM
 
 Локальная система управления проектами и задачами.
 
