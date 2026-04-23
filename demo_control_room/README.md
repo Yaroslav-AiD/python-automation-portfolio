@@ -29,20 +29,10 @@ python3 -m http.server 8000
 python -m http.server 8000
 start http://localhost:8000
 
-## Структура проекта
-
-demo-control-room/
-├── index.html          # Дашборд
-├── skill-tree.html     # Дерево развития
-├── tasks.html          # Канбан-доска
-├── journal.html        # Журнал
-├── docs.html           # Документация
-├── css/                # Стили
-│   └── shared.css
-├── start-server.sh     # Скрипт запуска (Linux/macOS)
-└── README.md           # Этот файл
-
 HTML5, CSS3
-JavaScript (Mermaid.js для визуализации)
-Python 3 (встроенный модуль http.server)
+
+JavaScript (Mermaid.js)
+
+Python 3 (встроенный модуль)
+
 Markdown (хранение данных)
