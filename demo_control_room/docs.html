@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>📚 DEMO · Docs</title>
+    <link rel="stylesheet" href="css/shared.css">
+    <style>
+        .docs-container {
+            background: #121a24;
+            border: 1px solid #2b3a4a;
+            border-radius: 18px;
+            padding: 1.5rem 2rem;
+            max-height: calc(100vh - 200px);
+            overflow-y: auto;
+        }
+        
+        .docs-sidebar {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+            flex-wrap: wrap;
+            border-bottom: 1px solid #2a3342;
+            padding-bottom: 1rem;
+        }
+        
+        .doc-btn {
+            background: transparent;
+            border: 1px solid #3e5f77;
+            color: #c0d0e0;
+            padding: 0.6rem 1.2rem;
+            border-radius: 30px;
+            cursor: pointer;
+            font-size: 0.95rem;
+            transition: all 0.2s;
+        }
+        
+        .doc-btn:hover {
+            background: #1a2a3a;
+            border-color: #5f9ea0;
+        }
+        
+        .doc-btn.active {
+            background: #1e3a5f;
+            border-color: #5f9ea0;
+            color: #e3e9f2;
+        }
+        
+        .doc-content {
+            line-height: 1.7;
+            color: #c0d0e0;
+        }
+        
+        .doc-content h1 {
+            color: #5f9ea0;
+            font-size: 1.8rem;
+            margin-bottom: 1.5rem;
+            border-bottom: 1px solid #2a3342;
+            padding-bottom: 0.8rem;
+        }
+        
+        .doc-content h2 {
+            color: #a6c1e8;
+            font-size: 1.3rem;
+            margin: 1.5rem 0 1rem;
+        }
+        
+        .doc-content h3 {
+            color: #bdd3ff;
+            font-size: 1.1rem;
+            margin: 1.2rem 0 0.8rem;
+        }
+        
+        .doc-content pre {
+            background: #0f1820;
+            padding: 1rem;
+            border-radius: 12px;
+            overflow-x: auto;
+            border: 1px solid #2a3342;
+            margin: 1rem 0;
+        }
+        
+        .doc-content code {
+            background: #0f1820;
+            padding: 0.2rem 0.4rem;
+            border-radius: 6px;
+            font-family: 'Monaco', 'Menlo', monospace;
+            font-size: 0.9rem;
+            color: #bdd3ff;
+        }
+        
+        .doc-content ul, .doc-content ol {
+            margin: 0.5rem 0 1rem 1.5rem;
+        }
+        
+        .doc-content li {
+            margin-bottom: 0.3rem;
+        }
+        
+        .doc-content strong {
+            color: #e3e9f2;
+        }
+        
+        .capsule-warning {
+            background: #2a1e1e;
+            border: 1px solid #9f6f6f;
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin: 1.5rem 0;
+            border-left: 4px solid #9f3e3e;
+        }
+        
+        .capsule-warning h3 {
+            color: #e8a6a6;
+            margin-top: 0;
+        }
+        
+        .status-bar {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+        
+        .file-path {
+            color: #6d85a4;
+            font-size: 0.85rem;
+            background: #0f1820;
+            padding: 0.3rem 0.8rem;
+            border-radius: 20px;
+        }
+        
+        .empty-state {
+            text-align: center;
+            padding: 3rem;
+            color: #6d85a4;
+        }
+    </style>
+</head>
+<body>
+<div class="dashboard">
+    <div class="header">
+        <h1>📚 DOCS <span class="badge">документация</span></h1>
+        <div class="legend">
+            <button class="btn-icon" id="refresh-btn">🔄 Обновить</button>
+        </div>
+    </div>
+
+    <div class="status-bar">
+        <span class="file-path">📁 ~/Desktop/disi/</span>
+    </div>
+
+    <div class="docs-sidebar">
+        <button class="doc-btn active" data-doc="capsule">🚀 Капсула восстановления</button>
+        <button class="doc-btn" data-doc="vision">🎯 Vision</button>
+        <button class="doc-btn" data-doc="architecture">🏗️ Architecture</button>
+        <button class="doc-btn" data-doc="security">🛡️ Security</button>
+        <button class="doc-btn" data-doc="assistant">🔧 Assistant v3</button>
+    </div>
+
+    <div class="docs-container" id="docs-container">
+        <div class="empty-state">Загрузка документа...</div>
+    </div>
+</div>
+
+<script>
+    // Пути к документам
+    const DOC_PATHS = {
+        capsule: 'CAPSULE.md',
+        vision: '../disi/docs/vision/VISION.md',
+        architecture: '../disi/docs/architecture/ARCHITECTURE.md',
+        security: '../disi/SECURITY.md',
+        assistant: '../disi/ASSISTANT_V3_SPEC.md'
+    };
+    
+    const container = document.getElementById('docs-container');
+    let currentDoc = 'capsule';
+    
+    // Переключение документов
+    document.querySelectorAll('.doc-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            document.querySelectorAll('.doc-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            currentDoc = btn.dataset.doc;
+            loadDocument(currentDoc);
+        });
+    });
+    
+    async function loadDocument(docId) {
+        container.innerHTML = '<div class="empty-state">Загрузка документа...</div>';
+        
+        const path = DOC_PATHS[docId];
+        if (!path) {
+            container.innerHTML = '<div class="empty-state">Документ не найден</div>';
+            return;
+        }
+        
+        try {
+            const response = await fetch(path + '?v=' + new Date().getTime());
+            
+            if (!response.ok) {
+                // Показываем заглушку, если файла нет
+                showPlaceholder(docId);
+                return;
+            }
+            
+            const text = await response.text();
+            renderDocument(docId, text);
+            
+        } catch (error) {
+            showPlaceholder(docId);
+        }
+    }
+    
+    function showPlaceholder(docId) {
+        const titles = {
+            capsule: 'CAPSULE.md',
+            vision: '🎯 Vision — Зачем всё это',
+            architecture: '🏗️ Architecture — Как устроена DEVA',
+            security: '🛡️ Security — Отчёт о безопасности',
+            assistant: '🔧 Assistant v3 — Спецификация'
+        };
+        
+        const placeholders = {
+            capsule: `
+                <div class="capsule-warning">
+                    <h3>⚠️ Документ не найден</h3>
+                    <p>Файл <code>капсула восстановления DEVA.txt</code> должен находиться в папке <code>~/Desktop/disi/</code>.</p>
+                    <p>Создайте этот файл и поместите в него инструкции по восстановлению проекта.</p>
+                </div>
+                <h3>📋 Что должно быть в капсуле</h3>
+                <ul>
+                    <li>Описание архитектуры DEVA</li>
+                    <li>Ключевые файлы и их назначение</li>
+                    <li>Как запустить систему</li>
+                    <li>Контакты / ссылки на чаты</li>
+                    <li>Текущее состояние дерева навыков</li>
+                </ul>
+            `,
+            vision: `<p>Файл <code>docs/vision/VISION.md</code> будет создан позже.</p>`,
+            architecture: `<p>Файл <code>docs/architecture/ARCHITECTURE.md</code> будет создан позже.</p>`,
+            security: `<p>Файл <code>SECURITY.md</code> будет создан позже.</p>`,
+            assistant: `<p>Файл <code>ASSISTANT_V3_SPEC.md</code> будет создан позже.</p>`
+        };
+        
+        container.innerHTML = `
+            <div class="doc-content">
+                <h1>${titles[docId]}</h1>
+                ${placeholders[docId] || '<p>Документ в разработке.</p>'}
+            </div>
+        `;
+    }
+    
+    function renderDocument(docId, content) {
+        const titles = {
+            capsule: 'CAPSULE.md',
+            vision: '🎯 Vision',
+            architecture: '🏗️ Architecture',
+            security: '🛡️ Security Report',
+            assistant: '🔧 Assistant v3 Specification'
+        };
+        
+        // Простое форматирование: абзацы по двойному переносу
+        let html = `<div class="doc-content">`;
+        html += `<h1>${titles[docId]}</h1>`;
+        
+        // Если это капсула — добавляем предупреждение
+        if (docId === 'capsule') {
+            html += `
+                <div class="capsule-warning">
+                    <h3>🆘 ЭКСТРЕННАЯ КАПСУЛА</h3>
+                    <p>Этот документ содержит всё необходимое для восстановления проекта DEMO в случае потери контекста.</p>
+                </div>
+            `;
+        }
+        
+        // Разбиваем на параграфы
+        const paragraphs = content.split('\n\n');
+        for (const para of paragraphs) {
+            if (para.trim() === '') continue;
+            
+            // Заголовки
+            if (para.startsWith('# ')) {
+                // уже есть h1
+            } else if (para.startsWith('## ')) {
+                html += `<h2>${para.substring(3)}</h2>`;
+            } else if (para.startsWith('### ')) {
+                html += `<h3>${para.substring(4)}</h3>`;
+            } else if (para.startsWith('```')) {
+                html += `<pre><code>${escapeHtml(para.substring(3, para.length - 3))}</code></pre>`;
+            } else {
+                // Жирный текст и код
+                let formatted = para
+                    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+                    .replace(/`(.+?)`/g, '<code>$1</code>')
+                    .replace(/\n/g, '<br>');
+                html += `<p>${formatted}</p>`;
+            }
+        }
+        
+        html += `</div>`;
+        container.innerHTML = html;
+    }
+    
+    function escapeHtml(text) {
+        return text
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;');
+    }
+    
+    document.getElementById('refresh-btn').addEventListener('click', () => loadDocument(currentDoc));
+    
+    // Загружаем капсулу при старте
+    loadDocument('capsule');
+</script>
+</body>
+</html>

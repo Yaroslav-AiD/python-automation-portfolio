@@ -1,0 +1,244 @@
+/* ==================== DEVA CONTROL ROOM - SHARED STYLES ==================== */
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    background: #0b0e14;
+    font-family: 'Segoe UI', 'Monaco', 'Menlo', monospace;
+    padding: 1rem;
+    color: #e3e9f2;
+}
+
+.dashboard {
+    max-width: 1650px;
+    margin: 0 auto;
+    padding-bottom: 0 !important;
+}
+
+/* ==================== HEADER ==================== */
+.header {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    margin-bottom: 0.6rem;
+    border-bottom: 1px solid #2a3342;
+    padding-bottom: 0.5rem;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+h1 {
+    font-weight: 700;
+    font-size: 1.5rem;
+}
+
+h1 .badge {
+    font-size: 1rem;
+    background: #1e2a3a;
+    padding: 0.2rem 0.8rem;
+    border-radius: 30px;
+    margin-left: 1rem;
+    color: #a6c1e8;
+}
+
+/* ==================== TABS ==================== */
+.tabs {
+    display: flex;
+    gap: 0.5rem;
+    margin-bottom: 0.1rem;
+    border-bottom: 1px solid #2a3342;
+    padding-bottom: 0.3rem;
+}
+
+.tab-btn {
+    background: transparent;
+    border: none;
+    color: #7f96b0;
+    padding: 0.8rem 1.5rem;
+    font-size: 1.1rem;
+    cursor: pointer;
+    border-radius: 12px 12px 0 0;
+    transition: all 0.2s;
+    font-family: inherit;
+}
+
+.tab-btn:hover {
+    background: #1a2a3a;
+    color: #bdd3ff;
+}
+
+.tab-btn.active {
+    background: #1e3a5f;
+    color: #e3e9f2;
+    border-bottom: 3px solid #5f9ea0;
+}
+
+/* ==================== LEGEND ==================== */
+.legend {
+    display: flex;
+    gap: 2rem;
+}
+
+.legend-item {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-size: 1rem;
+}
+
+.color-dot {
+    width: 16px;
+    height: 16px;
+    border-radius: 4px;
+}
+
+/* ==================== CONTROL BAR ==================== */
+.control-bar {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 1rem;
+    flex-wrap: wrap;
+}
+
+.zoom-control {
+    display: flex;
+    align-items: center;
+    gap: 0.8rem;
+}
+
+.zoom-control input {
+    width: 150px;
+    accent-color: #5f9ea0;
+}
+
+/* ==================== BUTTONS ==================== */
+button {
+    background: #1e3a5f;
+    border: 1px solid #3e6f9f;
+    color: #e3e9f2;
+    padding: 0.5rem 1.2rem;
+    border-radius: 30px;
+    cursor: pointer;
+    font-size: 1rem;
+    font-family: inherit;
+    transition: all 0.2s;
+}
+
+button:hover {
+    background: #2a4a6f;
+}
+
+button.danger {
+    background: #5f2d2d;
+    border-color: #9f3e3e;
+}
+
+button.danger:hover {
+    background: #7f3d3d;
+}
+
+button.success {
+    background: #1e5f3a;
+    border-color: #3e9f6f;
+}
+
+button.success:hover {
+    background: #2a7f4a;
+}
+
+/* ==================== CARDS & PANELS ==================== */
+.card {
+    background: #121a24;
+    border: 1px solid #2b3a4a;
+    border-radius: 18px;
+    padding: 1.25rem 1.5rem;
+}
+
+.card h3 {
+    font-weight: 400;
+    margin-bottom: 1rem;
+    color: #b7cdff;
+    font-size: 1.3rem;
+    border-left: 4px solid #5f9ea0;
+    padding-left: 0.8rem;
+}
+
+.editor-panel {
+    background: #121a24;
+    border: 1px solid #2b3a4a;
+    border-radius: 18px;
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+}
+
+/* ==================== FORMS ==================== */
+input, select, textarea {
+    background: #0f1820;
+    border: 1px solid #3e5f77;
+    color: #e3e9f2;
+    padding: 0.5rem 1rem;
+    border-radius: 10px;
+    font-family: inherit;
+    font-size: 0.95rem;
+}
+
+input:focus, select:focus, textarea:focus {
+    outline: none;
+    border-color: #5f9ea0;
+}
+
+.editor-row {
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 1rem;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+.editor-row label {
+    min-width: 100px;
+    color: #b7cdff;
+}
+
+/* ==================== STATS ==================== */
+.stat-row {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 0.6rem;
+    font-size: 1.1rem;
+}
+
+.tag {
+    background: #1f3543;
+    padding: 0.2rem 0.9rem;
+    border-radius: 30px;
+    font-size: 0.9rem;
+    color: #bdd3ff;
+}
+
+.hint {
+    color: #7f96b0;
+    font-size: 0.85rem;
+}
+
+/* ==================== IFRAME CONTAINER ==================== */
+#content-frame {
+    width: 100%;
+    height: calc(100vh - 180px);
+    min-height: 600px;
+    border: none;
+    background: transparent;
+}
+
+/* ==================== FOOTER ==================== */
+.footer-note {
+    margin-top: 0.3rem;
+    font-size: 0.7rem;
+    color: #6d85a4;
+    text-align: right;
+}

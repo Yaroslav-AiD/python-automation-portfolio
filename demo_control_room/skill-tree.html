@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🌳 DEMO · Skill Tree</title>
+    <link rel="stylesheet" href="css/shared.css">
+    <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+    <style>
+        /* Специфичные стили для Skill Tree */
+        .tree-wrapper {
+            background: #11161e;
+            border-radius: 28px;
+            padding: 1rem;
+            border: 1px solid #2c3848;
+            margin-bottom: 1.5rem;
+            height: 550px;
+            overflow: hidden;
+            position: relative;
+            cursor: grab;
+            width: 100%;
+            max-width: 100%;
+        }
+        .tree-wrapper:active { cursor: grabbing; }
+        
+        .mermaid-pan-zoom {
+            position: absolute;
+            top: 0; left: 0;
+            transform-origin: 0 0;
+            padding: 20px;
+        }
+        
+        .info-panels {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 1.5rem;
+        }
+        
+        .node-list {
+            max-height: 200px;
+            overflow-y: auto;
+        }
+        
+        .node-item {
+            padding: 0.3rem 0;
+            cursor: pointer;
+            border-bottom: 1px solid #2a3342;
+        }
+        
+        .node-item:hover { background: #1a2a3a; }
+    </style>
+</head>
+<body>
+<div class="dashboard">
+    <div class="header">
+        <h1>🌳 SKILL TREE <span class="badge">редактор</span></h1>
+        <div class="legend">
+            <div class="legend-item"><span class="color-dot" style="background: #2d5f2d;"></span> ✅</div>
+            <div class="legend-item"><span class="color-dot" style="background: #a38d2b;"></span> ⏳</div>
+            <div class="legend-item"><span class="color-dot" style="background: #8b2a2a;"></span> ❌</div>
+            <div class="legend-item"><span class="color-dot" style="background: #a12f2f;"></span> ⚠️</div>
+        </div>
+    </div>
+
+    <!-- Панель редактирования -->
+    <div class="editor-panel" id="editor-panel" style="display:none;">
+        <div class="editor-row">
+            <label>Редактировать узел:</label>
+            <select id="edit-node-select"></select>
+            <button id="load-node-btn">📝 Загрузить</button>
+        </div>
+        <div class="editor-row">
+            <label>Название:</label>
+            <input type="text" id="edit-label" style="width:400px;">
+        </div>
+        <div class="editor-row">
+            <label>Статус:</label>
+            <select id="edit-status">
+                <option value="core">🧬 Ядро</option>
+                <option value="disi">🧠 Mind</option>
+                <option value="eva">🔥 Correct</option>
+                <option value="pro">⚙️ Проактивный</option>
+                <option value="done">✅ Реализовано</option>
+                <option value="progress">⏳ В процессе</option>
+                <option value="todo">❌ Не начато</option>
+                <option value="priority">⚠️ Приоритет</option>
+            </select>
+        </div>
+        <div class="editor-row">
+            <label>Уровень:</label>
+            <input type="number" id="edit-level" style="width:100px;" placeholder="число">
+        </div>
+        <div class="editor-row">
+            <button class="success" id="save-node-btn">💾 Сохранить</button>
+            <button class="danger" id="delete-node-btn">🗑️ Удалить</button>
+        </div>
+        <hr style="border-color:#2a3342; margin:1rem 0;">
+        <div class="editor-row">
+            <label>➕ Новый узел:</label>
+            <input type="text" id="new-node-id" placeholder="ID (например: G6)" style="width:150px;">
+            <input type="text" id="new-node-label" placeholder="Название" style="width:300px;">
+        </div>
+        <div class="editor-row">
+            <label>Родитель:</label>
+            <select id="parent-select"></select>
+            <button class="success" id="add-node-btn">➕ Добавить</button>
+        </div>
+    </div>
+
+    <div class="control-bar">
+        <div class="zoom-control">
+            <span>🔍</span>
+            <input type="range" id="zoom-slider" min="0.3" max="2.5" value="1.0" step="0.05">
+            <span id="zoom-value">100%</span>
+        </div>
+        <button id="toggle-editor">✏️ Редактор</button>
+        <button id="reset-tree">🔄 Сбросить</button>
+        <span class="hint">← колесо / drag</span>
+    </div>
+
+    <div class="tree-wrapper" id="tree-wrapper">
+        <div class="mermaid-pan-zoom" id="mermaid-pan-zoom">
+            <div class="mermaid" id="mermaid-block"></div>
+        </div>
+    </div>
+
+    <div class="info-panels">
+        <div class="card">
+            <h3>📊 Статистика</h3>
+            <div class="stat-row"><span>✅ Завершено</span> <span id="stat-done">-</span></div>
+            <div class="stat-row"><span>⏳ В процессе</span> <span id="stat-progress">-</span></div>
+            <div class="stat-row"><span>❌ Ожидают</span> <span id="stat-todo">-</span></div>
+            <div class="stat-row"><span>⚠️ Приоритет</span> <span id="stat-priority">-</span></div>
+            <div class="stat-row"><span>📦 Всего</span> <span id="stat-total">-</span></div>
+        </div>
+        <div class="card">
+            <h3>🎯 Приоритеты</h3>
+            <div id="priority-list"></div>
+        </div>
+        <div class="card">
+            <h3>📋 Все узлы</h3>
+            <div class="node-list" id="all-nodes-list"></div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // ==================== ДАННЫЕ ====================
+    const defaultTree = {
+        CORE: { label: "🧬 Проекты портфолио", status: "core", level: null, children: ["SCRAPING", "AUTOMATION", "TOOLS"] },
+        SCRAPING: { label: "🔍 Парсинг и сбор данных", status: "pro", level: null, children: ["KWORK", "OZON"] },
+        AUTOMATION: { label: "🤖 Автоматизация", status: "pro", level: null, children: ["TELEGRAM", "EXCEL"] },
+        TOOLS: { label: "🛠 Инструменты", status: "pro", level: null, children: ["DEVA"] },
+        KWORK: { label: "🕵️ Kwork Scout ✅", status: "done", level: null, children: ["KW1", "KW2"] },
+        KW1: { label: "Selenium WebDriver ✅", status: "done", level: null, children: [] },
+        KW2: { label: "Фильтр ключевых слов ✅", status: "done", level: null, children: [] },
+        OZON: { label: "🛒 Ozon Parser ✅", status: "done", level: null, children: ["OZ1", "OZ2", "OZ3"] },
+        OZ1: { label: "Обход Cloudflare ✅", status: "done", level: null, children: [] },
+        OZ2: { label: "Парсинг JSON ✅", status: "done", level: null, children: [] },
+        OZ3: { label: "Экспорт в Excel ✅", status: "done", level: null, children: [] },
+        TELEGRAM: { label: "📱 Telegram Bot ⏳", status: "progress", level: null, children: ["TG1"] },
+        TG1: { label: "API ЦБ РФ ✅", status: "done", level: null, children: [] },
+        EXCEL: { label: "📊 Excel Automation ✅", status: "done", level: null, children: [] },
+        DEVA: { label: "🏗 Demo Control Room ✅", status: "done", level: null, children: ["DEV1", "DEV2"] },
+        DEV1: { label: "Канбан-доска ✅", status: "done", level: null, children: [] },
+        DEV2: { label: "Дерево навыков ✅", status: "done", level: null, children: [] }
+    };
+
+    let treeData = { nodes: {}, root: "CORE" };
+    
+    function loadData() {
+        const saved = localStorage.getItem('deva_skill_tree_v2');
+        if (saved) {
+            try { treeData = JSON.parse(saved); } 
+            catch(e) { treeData = { nodes: JSON.parse(JSON.stringify(defaultTree)), root: "CORE" }; }
+        } else {
+            treeData = { nodes: JSON.parse(JSON.stringify(defaultTree)), root: "CORE" };
+        }
+    }
+    loadData();
+
+    function saveToStorage() {
+        localStorage.setItem('deva_skill_tree_v2', JSON.stringify(treeData));
+        updateUI();
+        renderTree();
+    }
+
+    function generateMermaid() {
+        const lines = ['graph TD'];
+        const classes = { core:'core', disi:'disi', eva:'eva', pro:'pro', done:'done', progress:'progress', todo:'todo', priority:'priority' };
+        
+        for (const [id, node] of Object.entries(treeData.nodes)) {
+            let label = node.label;
+            if (node.level && !label.includes('Lvl:')) label += ` Lvl:${node.level}`;
+            lines.push(`    ${id}["${label.replace(/\n/g,' ')}"]`);
+        }
+        for (const [id, node] of Object.entries(treeData.nodes)) {
+            for (const child of node.children || []) {
+                if (treeData.nodes[child]) lines.push(`    ${id} --> ${child}`);
+            }
+        }
+        for (const [id, node] of Object.entries(treeData.nodes)) {
+            lines.push(`    class ${id} ${classes[node.status] || 'done'}`);
+        }
+        lines.push(`    classDef core fill:#1a1a2e,stroke:#b380da,stroke-width:3px,color:#fff`);
+        lines.push(`    classDef disi fill:#1e3a5f,stroke:#6cf,stroke-width:2px,color:#fff`);
+        lines.push(`    classDef eva fill:#5f1e3a,stroke:#f6c,stroke-width:2px,color:#fff`);
+        lines.push(`    classDef pro fill:#1e5f3a,stroke:#6f6,stroke-width:2px,color:#fff`);
+        lines.push(`    classDef done fill:#2d5f2d,stroke:#8f8,stroke-width:2px,color:#fff`);
+        lines.push(`    classDef progress fill:#a38d2b,stroke:#ffdb7c,stroke-width:2px,color:#fff`);
+        lines.push(`    classDef todo fill:#8b2a2a,stroke:#f66,stroke-width:2px,color:#fff`);
+        lines.push(`    classDef priority fill:#a12f2f,stroke:#ff7b7b,stroke-width:2.5px,color:#fff`);
+        return lines.join('\n');
+    }
+
+    async function renderTree() {
+        mermaidBlock.innerHTML = generateMermaid();
+        await mermaid.run({ nodes: [mermaidBlock] });
+    }
+
+    function updateUI() {
+        const nodes = Object.values(treeData.nodes);
+        document.getElementById('stat-done').textContent = nodes.filter(n => n.status === 'done').length;
+        document.getElementById('stat-progress').textContent = nodes.filter(n => n.status === 'progress').length;
+        document.getElementById('stat-todo').textContent = nodes.filter(n => n.status === 'todo').length;
+        document.getElementById('stat-priority').textContent = nodes.filter(n => n.status === 'priority').length;
+        document.getElementById('stat-total').textContent = nodes.length;
+        
+        const prio = nodes.filter(n => n.status === 'priority' || n.status === 'progress').slice(0,5);
+        document.getElementById('priority-list').innerHTML = prio.map(n => `• ${n.label}`).join('<br>') || '—';
+        
+        const allIds = Object.keys(treeData.nodes).sort();
+        document.getElementById('all-nodes-list').innerHTML = allIds.map(id => 
+            `<div class="node-item" data-id="${id}">${id}: ${treeData.nodes[id].label.substring(0,30)}</div>`
+        ).join('');
+        
+        const editSelect = document.getElementById('edit-node-select');
+        const parentSelect = document.getElementById('parent-select');
+        editSelect.innerHTML = parentSelect.innerHTML = allIds.map(id => `<option value="${id}">${id} - ${treeData.nodes[id].label.substring(0,40)}</option>`).join('');
+    }
+
+    // ==================== РЕДАКТИРОВАНИЕ ====================
+    document.getElementById('toggle-editor').addEventListener('click', () => {
+        const panel = document.getElementById('editor-panel');
+        panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
+        updateUI();
+    });
+    
+    document.getElementById('load-node-btn').addEventListener('click', () => {
+        const id = document.getElementById('edit-node-select').value;
+        const node = treeData.nodes[id];
+        document.getElementById('edit-label').value = node.label;
+        document.getElementById('edit-status').value = node.status;
+        document.getElementById('edit-level').value = node.level || '';
+    });
+    
+    document.getElementById('save-node-btn').addEventListener('click', () => {
+        const id = document.getElementById('edit-node-select').value;
+        const node = treeData.nodes[id];
+        node.label = document.getElementById('edit-label').value;
+        node.status = document.getElementById('edit-status').value;
+        node.level = document.getElementById('edit-level').value ? parseInt(document.getElementById('edit-level').value) : null;
+        saveToStorage();
+    });
+    
+    document.getElementById('delete-node-btn').addEventListener('click', () => {
+        const id = document.getElementById('edit-node-select').value;
+        if (id === 'CORE') { alert('Нельзя удалить ядро'); return; }
+        for (const n of Object.values(treeData.nodes)) {
+            if (n.children) n.children = n.children.filter(c => c !== id);
+        }
+        delete treeData.nodes[id];
+        saveToStorage();
+    });
+    
+    document.getElementById('add-node-btn').addEventListener('click', () => {
+        let newId = document.getElementById('new-node-id').value.trim().toUpperCase();
+        const parentId = document.getElementById('parent-select').value;
+        const label = document.getElementById('new-node-label').value;
+        
+        if (!newId) {
+            let c = 1;
+            while (treeData.nodes[`${parentId}_${c}`]) c++;
+            newId = `${parentId}_${c}`;
+        }
+        if (treeData.nodes[newId]) { alert('Такой ID уже есть'); return; }
+        
+        treeData.nodes[newId] = {
+            label: label || 'Новый узел',
+            status: 'todo',
+            level: null,
+            children: []
+        };
+        if (!treeData.nodes[parentId].children) treeData.nodes[parentId].children = [];
+        treeData.nodes[parentId].children.push(newId);
+        saveToStorage();
+        document.getElementById('new-node-id').value = '';
+        document.getElementById('new-node-label').value = '';
+    });
+    
+    document.getElementById('reset-tree').addEventListener('click', () => {
+        if (confirm('Сбросить все изменения?')) {
+            treeData = { nodes: JSON.parse(JSON.stringify(defaultTree)), root: "CORE" };
+            saveToStorage();
+        }
+    });
+
+    // ==================== ZOOM & DRAG ====================
+    const mermaidBlock = document.getElementById('mermaid-block');
+    const wrapper = document.getElementById('tree-wrapper');
+    const panZoom = document.getElementById('mermaid-pan-zoom');
+    const slider = document.getElementById('zoom-slider');
+    const zoomVal = document.getElementById('zoom-value');
+    let scale = 1.0, translateX = 20, translateY = 20, isDragging = false, startX, startY;
+
+    function updateTransform() {
+        panZoom.style.transform = `translate(${translateX}px, ${translateY}px) scale(${scale})`;
+        zoomVal.textContent = Math.round(scale * 100) + '%';
+        slider.value = scale;
+    }
+
+    slider.addEventListener('input', () => { scale = parseFloat(slider.value); updateTransform(); });
+    wrapper.addEventListener('wheel', (e) => { e.preventDefault(); scale = Math.min(2.5, Math.max(0.3, scale + (e.deltaY > 0 ? -0.05 : 0.05))); updateTransform(); }, { passive: false });
+    wrapper.addEventListener('mousedown', (e) => { isDragging = true; startX = e.clientX - translateX; startY = e.clientY - translateY; wrapper.style.cursor = 'grabbing'; });
+    window.addEventListener('mousemove', (e) => { if(!isDragging) return; translateX = e.clientX - startX; translateY = e.clientY - startY; updateTransform(); });
+    window.addEventListener('mouseup', () => { isDragging = false; wrapper.style.cursor = 'grab'; });
+
+    mermaid.initialize({ startOnLoad: false, theme: 'base', themeVariables: { background: '#11161e', primaryColor: '#1f3543', primaryTextColor: '#fff', lineColor: '#5f7faf', fontSize: '16px' }, flowchart: { useMaxWidth: false, htmlLabels: true, curve: 'basis', padding: 25 }, securityLevel: 'loose' });
+
+    renderTree();
+    updateTransform();
+    updateUI();
+</script>
+</body>
+</html>

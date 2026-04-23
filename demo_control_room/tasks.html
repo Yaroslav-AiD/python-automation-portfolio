@@ -1,0 +1,376 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>📋 DEVA · Tasks</title>
+    <link rel="stylesheet" href="css/shared.css">
+    <style>
+        .tasks-container {
+            background: #121a24;
+            border: 1px solid #2b3a4a;
+            border-radius: 18px;
+            padding: 1.5rem;
+            max-height: calc(100vh - 200px);
+            overflow-y: auto;
+        }
+        
+        .kanban-board {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr 1fr;
+            gap: 1rem;
+        }
+        
+        .kanban-column {
+            background: #0f1820;
+            border-radius: 14px;
+            padding: 1rem;
+            border-top: 4px solid;
+        }
+        
+        .column-work { border-color: #9f3e3e; }
+        .column-queue { border-color: #a38d2b; }
+        .column-backlog { border-color: #3e6f9f; }
+        .column-done { border-color: #2d5f2d; }
+        
+        .column-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 1rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 1px solid #2a3342;
+        }
+        
+        .column-header h3 {
+            font-size: 1rem;
+            font-weight: 400;
+            margin: 0;
+            padding: 0;
+            border: none;
+        }
+        
+        .column-count {
+            background: #1a2a3a;
+            padding: 0.2rem 0.6rem;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            color: #a6c1e8;
+        }
+        
+        .task-list {
+            list-style: none;
+            min-height: 200px;
+        }
+        
+        .task-item {
+            background: #121a24;
+            border: 1px solid #2a3342;
+            border-radius: 10px;
+            padding: 0.8rem 1rem;
+            margin-bottom: 0.6rem;
+            font-size: 0.9rem;
+            line-height: 1.4;
+            color: #c0d0e0;
+            transition: all 0.15s;
+        }
+        
+        .task-item:hover {
+            background: #1a2a3a;
+            border-color: #3e5f77;
+        }
+        
+        .task-item.done {
+            opacity: 0.7;
+            text-decoration: line-through;
+        }
+        
+        .task-tags {
+            margin-top: 0.4rem;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.3rem;
+        }
+        
+        .task-tag {
+            background: #1f3543;
+            padding: 0.15rem 0.5rem;
+            border-radius: 20px;
+            font-size: 0.7rem;
+            color: #a6c1e8;
+        }
+        
+        .task-priority {
+            font-size: 0.7rem;
+            padding: 0.15rem 0.5rem;
+            border-radius: 20px;
+            display: inline-block;
+            margin-right: 0.4rem;
+        }
+        
+        .priority-high { background: #5f2d2d; color: #e8a6a6; }
+        .priority-medium { background: #5f4f2d; color: #e8d6a6; }
+        .priority-low { background: #2d4f5f; color: #a6c8e8; }
+        
+        .status-bar {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+        
+        .file-path {
+            color: #6d85a4;
+            font-size: 0.85rem;
+            background: #0f1820;
+            padding: 0.3rem 0.8rem;
+            border-radius: 20px;
+        }
+        
+        .empty-state {
+            text-align: center;
+            padding: 2rem;
+            color: #6d85a4;
+        }
+        
+        .stats-footer {
+            margin-top: 1.5rem;
+            padding-top: 1rem;
+            border-top: 1px solid #2a3342;
+            color: #6d85a4;
+            font-size: 0.85rem;
+            display: flex;
+            gap: 2rem;
+        }
+        
+        .priority-legend {
+            display: flex;
+            gap: 1rem;
+            margin-left: auto;
+        }
+    </style>
+</head>
+<body>
+<div class="dashboard">
+    <div class="header">
+        <h1>📋 TASKS <span class="badge">канбан</span></h1>
+        <div class="legend">
+            <button class="btn-icon" id="refresh-btn">🔄 Обновить</button>
+        </div>
+    </div>
+
+    <div class="status-bar">
+        <span class="file-path" id="file-path">📁 ~/Desktop/disi/TASKS.md</span>
+        <span id="last-updated" class="hint"></span>
+    </div>
+
+    <div class="tasks-container" id="tasks-container">
+        <div class="empty-state">Загрузка задач...</div>
+    </div>
+</div>
+
+<script>
+    const TASKS_PATH = 'TASKS.md';
+    const container = document.getElementById('tasks-container');
+    const lastUpdatedSpan = document.getElementById('last-updated');
+    
+    // Приоритеты
+    const PRIORITIES = {
+        'высокий': { class: 'priority-high', label: '🔴' },
+        'средний': { class: 'priority-medium', label: '🟡' },
+        'низкий': { class: 'priority-low', label: '🟢' },
+        'high': { class: 'priority-high', label: '🔴' },
+        'medium': { class: 'priority-medium', label: '🟡' },
+        'low': { class: 'priority-low', label: '🟢' }
+    };
+    
+    async function loadTasks() {
+        container.innerHTML = '<div class="empty-state">Загрузка задач...</div>';
+        
+        try {
+            const response = await fetch(TASKS_PATH + '?v=' + new Date().getTime());
+            if (!response.ok) throw new Error(`Файл не найден (${response.status})`);
+            
+            const text = await response.text();
+            const board = parseTasks(text);
+            renderBoard(board);
+            
+            const now = new Date();
+            lastUpdatedSpan.textContent = `Обновлено: ${now.toLocaleTimeString('ru-RU')}`;
+            
+        } catch (error) {
+            container.innerHTML = `
+                <div class="error-state" style="background:#3a1e1e; border:1px solid #9f3e3e; border-radius:12px; padding:1.5rem; color:#e8a6a6;">
+                    <strong>❌ Ошибка загрузки</strong><br>
+                    ${error.message}<br><br>
+                    <code style="background:#0f1820; padding:0.3rem;">cd ~/Desktop/deva-control-room && ln -s ~/Desktop/disi/TASKS.md TASKS.md</code>
+                    <br><br>
+                    <button onclick="loadTasks()">🔄 Попробовать снова</button>
+                </div>`;
+        }
+    }
+    
+    function parseTasks(markdown) {
+        const board = {
+            work: { title: '🔴 В РАБОТЕ', tasks: [] },
+            queue: { title: '🟡 ОЧЕРЕДЬ', tasks: [] },
+            backlog: { title: '🟢 БЭКЛОГ', tasks: [] },
+            done: { title: '✅ ЗАВЕРШЕНО', tasks: [] }
+        };
+        
+        const lines = markdown.split('\n');
+        let currentSection = null;
+        
+        for (let line of lines) {
+            line = line.trim();
+            
+            // Определяем секцию
+            if (line.includes('🔴 В РАБОТЕ') || line.includes('В РАБОТЕ')) {
+                currentSection = 'work';
+                continue;
+            }
+            if (line.includes('🟡 ОЧЕРЕДЬ') || line.includes('ОЧЕРЕДЬ')) {
+                currentSection = 'queue';
+                continue;
+            }
+            if (line.includes('🟢 БЭКЛОГ') || line.includes('БЭКЛОГ')) {
+                currentSection = 'backlog';
+                continue;
+            }
+            if (line.includes('✅ ЗАВЕРШЕНО') || line.includes('ЗАВЕРШЕНО')) {
+                currentSection = 'done';
+                continue;
+            }
+            
+            // Пропускаем заголовки и пустые строки
+            if (line.startsWith('#') || line === '') continue;
+            
+            // Задача: - [ ] текст #тег или - [x] текст
+            const taskMatch = line.match(/^[-*]\s+\[([ xX])\]\s+(.+)$/);
+            if (taskMatch && currentSection) {
+                const isDone = taskMatch[1].toLowerCase() === 'x';
+                const content = taskMatch[2];
+                
+                // Извлекаем теги #tag
+                const tags = [];
+                const tagRegex = /#(\w+)/g;
+                let match;
+                while ((match = tagRegex.exec(content)) !== null) {
+                    tags.push(match[1]);
+                }
+                
+                // Извлекаем приоритет (🔴 высокий) или (высокий)
+                let priority = null;
+                const priorityMatch = content.match(/[🔴🟡🟢]\s*(\w+)/);
+                if (priorityMatch) {
+                    priority = priorityMatch[1].toLowerCase();
+                } else {
+                    const textPriority = content.match(/\((высокий|средний|низкий|high|medium|low)\)/i);
+                    if (textPriority) {
+                        priority = textPriority[1].toLowerCase();
+                    }
+                }
+                
+                // Чистим текст
+                let cleanContent = content
+                    .replace(/#\w+/g, '')
+                    .replace(/[🔴🟡🟢]\s*\w*\s*/g, '')
+                    .replace(/\((высокий|средний|низкий|high|medium|low)\)/gi, '')
+                    .trim();
+                
+                board[currentSection].tasks.push({
+                    text: cleanContent,
+                    tags: tags,
+                    priority: priority,
+                    done: isDone
+                });
+            }
+        }
+        
+        return board;
+    }
+    
+    function renderBoard(board) {
+        let html = '<div class="kanban-board">';
+        
+        const sections = [
+            { key: 'work', class: 'column-work' },
+            { key: 'queue', class: 'column-queue' },
+            { key: 'backlog', class: 'column-backlog' },
+            { key: 'done', class: 'column-done' }
+        ];
+        
+        let totalTasks = 0;
+        let totalDone = 0;
+        
+        for (const section of sections) {
+            const data = board[section.key];
+            totalTasks += data.tasks.length;
+            if (section.key === 'done') totalDone = data.tasks.length;
+            
+            html += `<div class="kanban-column ${section.class}">`;
+            html += `<div class="column-header">`;
+            html += `<h3>${data.title}</h3>`;
+            html += `<span class="column-count">${data.tasks.length}</span>`;
+            html += `</div>`;
+            html += `<div class="task-list">`;
+            
+            if (data.tasks.length === 0) {
+                html += `<div class="empty-state" style="padding:1rem; font-size:0.85rem;">—</div>`;
+            } else {
+                for (const task of data.tasks) {
+                    html += renderTask(task);
+                }
+            }
+            
+            html += `</div></div>`;
+        }
+        
+        html += '</div>';
+        
+        // Статистика
+        const donePercent = totalTasks > 0 ? Math.round((totalDone / totalTasks) * 100) : 0;
+        html += `<div class="stats-footer">`;
+        html += `<span>📊 Всего задач: ${totalTasks}</span>`;
+        html += `<span>✅ Завершено: ${totalDone} (${donePercent}%)</span>`;
+        html += `<div class="priority-legend">`;
+        html += `<span><span class="task-priority priority-high">🔴</span> высокий</span>`;
+        html += `<span><span class="task-priority priority-medium">🟡</span> средний</span>`;
+        html += `<span><span class="task-priority priority-low">🟢</span> низкий</span>`;
+        html += `</div>`;
+        html += `</div>`;
+        
+        container.innerHTML = html;
+    }
+    
+    function renderTask(task) {
+        let html = `<div class="task-item ${task.done ? 'done' : ''}">`;
+        
+        // Приоритет
+        if (task.priority && PRIORITIES[task.priority]) {
+            const p = PRIORITIES[task.priority];
+            html += `<span class="task-priority ${p.class}">${p.label}</span>`;
+        }
+        
+        // Текст задачи
+        html += `<span>${task.text}</span>`;
+        
+        // Теги
+        if (task.tags.length > 0) {
+            html += `<div class="task-tags">`;
+            for (const tag of task.tags) {
+                html += `<span class="task-tag">#${tag}</span>`;
+            }
+            html += `</div>`;
+        }
+        
+        html += `</div>`;
+        return html;
+    }
+    
+    document.getElementById('refresh-btn').addEventListener('click', loadTasks);
+    
+    loadTasks();
+</script>
+</body>
+</html>

@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>📓 DEVA · Journal</title>
+    <link rel="stylesheet" href="css/shared.css">
+    <style>
+        .journal-container {
+            background: #121a24;
+            border: 1px solid #2b3a4a;
+            border-radius: 18px;
+            padding: 1.5rem 2rem;
+            max-height: calc(100vh - 140px);
+            overflow-y: auto;
+        }
+        
+        .journal-entry {
+            margin-bottom: 2.5rem;
+        }
+        
+        .journal-header {
+            display: flex;
+            align-items: baseline;
+            gap: 1rem;
+            margin-bottom: 1rem;
+            border-bottom: 1px solid #2a3342;
+            padding-bottom: 0.5rem;
+        }
+        
+        .journal-date {
+            color: #5f9ea0;
+            font-size: 1.4rem;
+            font-weight: 400;
+        }
+        
+        .journal-title {
+            color: #a6c1e8;
+            font-size: 1.1rem;
+        }
+        
+        .journal-content {
+            color: #c0d0e0;
+            line-height: 1.7;
+            padding-left: 0.5rem;
+        }
+        
+        .journal-content p {
+            margin-bottom: 0.8rem;
+        }
+        
+        .journal-content strong {
+            color: #e3e9f2;
+        }
+        
+        .journal-content ul, .journal-content ol {
+            margin: 0.5rem 0 0.8rem 1.5rem;
+        }
+        
+        .journal-content li {
+            margin-bottom: 0.3rem;
+        }
+        
+        .journal-content code {
+            background: #0f1820;
+            padding: 0.2rem 0.4rem;
+            border-radius: 6px;
+            font-family: 'Monaco', 'Menlo', monospace;
+            font-size: 0.9rem;
+            color: #bdd3ff;
+        }
+        
+        .insight-block {
+            background: #1a2a3a;
+            border-left: 4px solid #5f9ea0;
+            padding: 0.8rem 1.2rem;
+            margin: 1rem 0;
+            border-radius: 0 12px 12px 0;
+        }
+        
+        .next-step-block {
+            background: #1e3a1e;
+            border-left: 4px solid #6faf6f;
+            padding: 0.8rem 1.2rem;
+            margin: 1rem 0;
+            border-radius: 0 12px 12px 0;
+        }
+        
+        .tag {
+            background: #1f3543;
+            padding: 0.15rem 0.7rem;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            color: #a6c1e8;
+            display: inline-block;
+            margin-right: 0.4rem;
+        }
+        
+        .status-bar {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+        
+        .file-path {
+            color: #6d85a4;
+            font-size: 0.85rem;
+            background: #0f1820;
+            padding: 0.3rem 0.8rem;
+            border-radius: 20px;
+        }
+        
+        .empty-state {
+            text-align: center;
+            padding: 3rem;
+            color: #6d85a4;
+        }
+        
+        .error-state {
+            background: #3a1e1e;
+            border: 1px solid #9f3e3e;
+            border-radius: 12px;
+            padding: 1.5rem;
+            color: #e8a6a6;
+        }
+        
+        .stats-footer {
+            margin-top: 2rem;
+            padding-top: 1rem;
+            border-top: 1px solid #2a3342;
+            color: #6d85a4;
+            font-size: 0.9rem;
+            display: flex;
+            gap: 2rem;
+        }
+    </style>
+</head>
+<body>
+<div class="dashboard">
+    <div class="header">
+        <h1>📓 JOURNAL <span class="badge">история развития</span></h1>
+        <div class="legend">
+            <button class="btn-icon" id="refresh-btn">🔄 Обновить</button>
+        </div>
+    </div>
+
+    <div class="status-bar">
+        <span class="file-path">📁 ~/Desktop/disi/JOURNAL.md</span>
+        <span id="last-updated" class="hint"></span>
+    </div>
+
+    <div class="journal-container" id="journal-container">
+        <div class="empty-state">Загрузка журнала...</div>
+    </div>
+</div>
+
+<script>
+    const JOURNAL_PATH = 'JOURNAL.md';
+    const container = document.getElementById('journal-container');
+    const lastUpdatedSpan = document.getElementById('last-updated');
+    
+    async function loadJournal() {
+        container.innerHTML = '<div class="empty-state">Загрузка журнала...</div>';
+        
+        try {
+            const response = await fetch(JOURNAL_PATH + '?t=' + Date.now());
+            if (!response.ok) throw new Error(`Файл не найден (${response.status})`);
+            
+            const text = await response.text();
+            const entries = parseJournal(text);
+            
+            if (entries.length === 0) {
+                container.innerHTML = '<div class="empty-state">📭 Журнал пуст</div>';
+            } else {
+                renderJournal(entries);
+            }
+            
+            const now = new Date();
+            lastUpdatedSpan.textContent = `Обновлено: ${now.toLocaleTimeString('ru-RU')}`;
+            
+        } catch (error) {
+            container.innerHTML = `
+                <div class="error-state">
+                    <strong>❌ Ошибка загрузки</strong><br>
+                    ${error.message}<br><br>
+                    <code style="background:#0f1820; padding:0.3rem;">cd ~/Desktop/deva-control-room && ln -s ~/Desktop/disi/JOURNAL.md JOURNAL.md</code>
+                    <br><br>
+                    <button onclick="loadJournal()">🔄 Попробовать снова</button>
+                </div>`;
+        }
+    }
+    
+    function parseJournal(markdown) {
+        const entries = [];
+        const lines = markdown.split('\n');
+        
+        let i = 0;
+        let currentEntry = null;
+        let contentLines = [];
+        
+        while (i < lines.length) {
+            const line = lines[i];
+            
+            // Заголовок даты: ## YYYY-MM-DD — Заголовок
+            const dateMatch = line.match(/^##\s+(\d{4}-\d{2}-\d{2})\s*[—\-]\s*(.+)$/);
+            
+            if (dateMatch || line.match(/^##\s+(\d{4}-\d{2}-\d{2})/)) {
+                // Сохраняем предыдущую запись
+                if (currentEntry) {
+                    currentEntry.content = contentLines.join('\n').trim();
+                    entries.push(currentEntry);
+                }
+                
+                const date = dateMatch ? dateMatch[1] : line.match(/^##\s+(\d{4}-\d{2}-\d{2})/)[1];
+                const title = dateMatch ? dateMatch[2] : '';
+                
+                currentEntry = { date, title, content: '' };
+                contentLines = [];
+                i++;
+                continue;
+            }
+            
+            // Пропускаем главный заголовок
+            if (line.startsWith('# ')) {
+                i++;
+                continue;
+            }
+            
+            // Накапливаем контент
+            if (currentEntry) {
+                contentLines.push(line);
+            }
+            
+            i++;
+        }
+        
+        // Последняя запись
+        if (currentEntry) {
+            currentEntry.content = contentLines.join('\n').trim();
+            entries.push(currentEntry);
+        }
+        
+        // Сортируем по дате (новые сверху)
+        entries.sort((a, b) => b.date.localeCompare(a.date));
+        
+        return entries;
+    }
+    
+    function renderContent(content) {
+        if (!content) return '';
+        
+        const lines = content.split('\n');
+        let html = '';
+        let inList = false;
+        let listType = null;
+        
+        for (let i = 0; i < lines.length; i++) {
+            let line = lines[i];
+            
+            // Пустые строки
+            if (line.trim() === '') {
+                if (inList) {
+                    html += listType === 'ul' ? '</ul>' : '</ol>';
+                    inList = false;
+                }
+                continue;
+            }
+            
+            // Маркированный список
+            if (line.match(/^\s*[-*]\s/)) {
+                if (!inList || listType !== 'ul') {
+                    if (inList) html += listType === 'ul' ? '</ul>' : '</ol>';
+                    html += '<ul>';
+                    inList = true;
+                    listType = 'ul';
+                }
+                const item = line.replace(/^\s*[-*]\s/, '');
+                html += `<li>${formatInline(item)}</li>`;
+                continue;
+            }
+            
+            // Нумерованный список
+            if (line.match(/^\s*\d+\.\s/)) {
+                if (!inList || listType !== 'ol') {
+                    if (inList) html += listType === 'ul' ? '</ul>' : '</ol>';
+                    html += '<ol>';
+                    inList = true;
+                    listType = 'ol';
+                }
+                const item = line.replace(/^\s*\d+\.\s/, '');
+                html += `<li>${formatInline(item)}</li>`;
+                continue;
+            }
+            
+            // Закрываем список если был
+            if (inList) {
+                html += listType === 'ul' ? '</ul>' : '</ol>';
+                inList = false;
+                listType = null;
+            }
+            
+            // **Инсайт:** — специальный блок
+            if (line.match(/^\*\*Инсайт:\*\*/i)) {
+                const text = line.replace(/^\*\*Инсайт:\*\*\s*/i, '');
+                html += `<div class="insight-block"><strong>💡 Инсайт:</strong> ${formatInline(text)}</div>`;
+                continue;
+            }
+            
+            // **Следующий шаг:** — специальный блок
+            if (line.match(/^\*\*Следующий шаг:\*\*/i)) {
+                const text = line.replace(/^\*\*Следующий шаг:\*\*\s*/i, '');
+                html += `<div class="next-step-block"><strong>🎯 Следующий шаг:</strong> ${formatInline(text)}</div>`;
+                continue;
+            }
+            
+            // Обычный параграф
+            html += `<p>${formatInline(line)}</p>`;
+        }
+        
+        if (inList) {
+            html += listType === 'ul' ? '</ul>' : '</ol>';
+        }
+        
+        return html;
+    }
+    
+    function formatInline(text) {
+        // Жирный текст **text**
+        text = text.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+        
+        // Код `code`
+        text = text.replace(/`(.+?)`/g, '<code>$1</code>');
+        
+        // Теги #tag
+        text = text.replace(/#(\w+)/g, '<span class="tag">#$1</span>');
+        
+        return text;
+    }
+    
+    function renderJournal(entries) {
+        let html = '';
+        let totalItems = 0;
+        
+        for (const entry of entries) {
+            const date = new Date(entry.date);
+            const formattedDate = date.toLocaleDateString('ru-RU', {
+                weekday: 'short', year: 'numeric', month: 'long', day: 'numeric'
+            });
+            
+            html += `<div class="journal-entry">`;
+            html += `<div class="journal-header">`;
+            html += `<span class="journal-date">📅 ${formattedDate}</span>`;
+            if (entry.title) {
+                html += `<span class="journal-title">${entry.title}</span>`;
+            }
+            html += `</div>`;
+            html += `<div class="journal-content">`;
+            html += renderContent(entry.content);
+            html += `</div>`;
+            html += `</div>`;
+            
+            // Примерный подсчёт параграфов
+            totalItems += (entry.content.match(/\n/g) || []).length + 1;
+        }
+        
+        html += `<div class="stats-footer">
+            <span>📊 Дней активности: ${entries.length}</span>
+            <span>📝 Записей: ~${totalItems}</span>
+            <span>🔄 Автообновление по кнопке</span>
+        </div>`;
+        
+        container.innerHTML = html;
+    }
+    
+    document.getElementById('refresh-btn').addEventListener('click', loadJournal);
+    
+    loadJournal();
+</script>
+</body>
+</html>

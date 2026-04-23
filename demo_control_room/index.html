@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🌳 DEMO · Control Room</title>
+    <link rel="stylesheet" href="css/shared.css">
+    <style>
+        body { padding: 1rem 1.5rem; }
+        .app-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 1rem;
+        }
+        .app-header h1 { font-size: 1.8rem; }
+        .status-badge {
+            background: #1e5f3a;
+            padding: 0.3rem 1rem;
+            border-radius: 30px;
+            font-size: 0.85rem;
+            color: #a6e8a6;
+        }
+        #content-frame {
+            width: 100%;
+            height: calc(100vh - 160px);
+            min-height: 600px;
+            border: none;
+            background: transparent;
+        }
+        .error-message {
+            padding: 2rem;
+            text-align: center;
+            color: #9f6f6f;
+        }
+        .error-message a {
+            color: #5f9ea0;
+        }
+    </style>
+</head>
+<body>
+    <div class="app-header">
+        <h1>🌳 DEMO CONTROL ROOM <span class="badge">v1.0</span></h1>
+        <span class="status-badge">🟢 автономный режим</span>
+    </div>
+    
+    <div class="tabs">
+        <button class="tab-btn active" data-tab="skill-tree">🌳 Skill Tree</button>
+        <button class="tab-btn" data-tab="journal">📓 Journal</button>
+        <button class="tab-btn" data-tab="tasks">📋 Tasks</button>
+        <button class="tab-btn" data-tab="docs">📚 Docs</button>
+    </div>
+    
+    <div id="content-area">
+        <div class="error-message" id="error-message" style="display:none;">
+            <h3>⚠️ Не удалось загрузить контент</h3>
+            <p>Firefox блокирует загрузку локальных файлов через фреймы.</p>
+            <p><strong>Решение:</strong> запустите локальный сервер:</p>
+            <code style="background:#0f1820; padding:0.5rem 1rem; border-radius:8px; display:inline-block; margin:1rem 0;">
+                cd ~/Desktop/deva-control-room && python3 -m http.server 8080
+            </code>
+            <p>И откройте <a href="http://localhost:8080">http://localhost:8080</a></p>
+        </div>
+        <iframe id="content-frame" src="skill-tree.html" style="display:block;"></iframe>
+    </div>
+    
+    <div class="footer-note">
+        ⚡ DEMO Control Room · все данные сохраняются локально
+    </div>
+
+    <script>
+        const buttons = document.querySelectorAll('.tab-btn');
+        const frame = document.getElementById('content-frame');
+        const errorMsg = document.getElementById('error-message');
+        
+        // Проверяем, работает ли iframe
+        frame.onerror = function() {
+            frame.style.display = 'none';
+            errorMsg.style.display = 'block';
+        };
+        
+        buttons.forEach(btn => {
+            btn.addEventListener('click', () => {
+                buttons.forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                
+                const tab = btn.dataset.tab;
+                frame.src = tab + '.html';
+                
+                // Скрываем ошибку при переключении
+                errorMsg.style.display = 'none';
+                frame.style.display = 'block';
+            });
+        });
+        
+        // Проверяем, запущены ли мы с локального сервера
+        if (window.location.protocol === 'file:') {
+            frame.style.display = 'none';
+            errorMsg.style.display = 'block';
+        }
+    </script>
+</body>
+</html>
